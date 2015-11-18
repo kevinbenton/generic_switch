@@ -64,6 +64,7 @@ class GenericSwitch (object):
 
        return output
 
+    # NOTE(kevinbenton): this seems to be unused, what is it for?
     def check_if_network_exist (self, net_connect, segmentation_id):
         pass
 
@@ -180,7 +181,7 @@ class GenericSwitchDriver(driver_api.MechanismDriver):
            for device in self._get_device_list():
                switch = GenericSwitch(device_id=device)
                switch.add_network(segmentation_id=segmentation_id,network_id=network_id)
-
+        # NOTE(kevinbenton): this 'pass' statement can go away
         pass
 
     def update_network_precommit(self, context):
@@ -199,6 +200,8 @@ class GenericSwitchDriver(driver_api.MechanismDriver):
         network state. It is up to the mechanism driver to ignore
         state or state changes that it does not know or care about.
         """
+        # NOTE(kevinbenton): you can just remove these methods that you
+        # don't use.
         LOG.debug("Calling my_mech update_network_precommit")
         pass
 
@@ -218,6 +221,8 @@ class GenericSwitchDriver(driver_api.MechanismDriver):
         network state.  It is up to the mechanism driver to ignore
         state or state changes that it does not know or care about.
         """
+        # NOTE(kevinbenton): you will need to check to see if the segmentation
+        # type or ID changed here and update the switch if that happens.
         LOG.debug("Calling my_mech update_network_postcommit")
         pass
 
@@ -248,6 +253,7 @@ class GenericSwitchDriver(driver_api.MechanismDriver):
         expected, and will not prevent the resource from being
         deleted.
         """
+        # NOTE(kevinbenton): remove the VLAN from the switch at this point
         LOG.debug("Calling my_mech delete_network_postcommit")
         pass
 
@@ -493,8 +499,20 @@ class GenericSwitchDriver(driver_api.MechanismDriver):
            switch_info = local_link_information[0].get('switch_info')
            port_id = local_link_information[0].get('port_id')
            segments = context.segments_to_bind
+           # NOTE(kevinbenton): you should iterate through each segment until
+           # you successfully bind one. Multi-segment networks aren't common
+           # but they are possible.
+
+           # NOTE(kevinbenton): before continuing here you should check that
+           # the segment type is what you expect (VLAN or flat network it looks
+           # like based on the code handling no segmentation ID below).
            segmentation_id = segments[0]['segmentation_id']
+           # NOTE(kevinbenton): if segmentation ID is None, that means that we
+           # are in a flat or local segment IIRC. So we should put the port on
+           # some standard VLAN, is that what you decided vlan 1 is?
+
            #If segmentation ID is None, set vlan 1
+           #
            if not segmentation_id:
                segmentation_id = '1'
            LOG.debug("Putting port {port} on {switch_info} to vlan: {segmentation_id}".format(
@@ -502,9 +520,13 @@ class GenericSwitchDriver(driver_api.MechanismDriver):
                switch_info=switch_info,
                segmentation_id=segmentation_id,
            ))
+           # NOTE(kevinbenton): probably want to detect if the switch exists in
+           # config and return early if it doesn't
            switch = GenericSwitch(device_id=switch_info)
 
            # Move port to network
            switch.plug_port_to_network(port=port_id,segmentation_id=segmentation_id)
-            
+           # NOTE(kevinbenton): after setting up the port you wil want to call
+           # 'context.set_binding(segments[0]['id'], vif_type, vif_details)' to
+           # indicate that the port was actually bound.
         pass
